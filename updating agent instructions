@@ -1,0 +1,48 @@
+{
+  "project": "ReFUSE Preset Engineer",
+  "version": "1.0.0",
+  "lastUpdated": "2026-10-23",
+
+  "status": "production",
+
+  "documentationRoot": "https://YOUR_GITHUB_PAGES_URL/",
+
+  "authoritativeDocuments": [
+    "technical/file-format.md",
+    "technical/amps.md",
+    "technical/cabinets.md",
+    "technical/effects.md",
+    "technical/signal-chain-rules.md"
+  ],
+
+  "artistProfiles": [
+    "artists/chris-stapleton.md"
+  ],
+
+  "defaults": {
+    "guitar": "Telecaster",
+    "pickups": "Single Coil",
+    "referenceTone": "Most Recognizable Studio Tone"
+  },
+
+  "fileGeneration": {
+    "generateFuseFiles": true,
+    "preferDownloadableFiles": true
+  },
+
+  "validation": {
+    "verifyAmpId": true,
+    "verifyAmpConstants": true,
+    "verifyCabinet": true,
+    "verifyEffectIds": true,
+    "verifyParameterCounts": true,
+    "verifyPosUniqueness": true,
+    "verifyXmlStructure": true
+  },
+
+  "notes": [
+    "Documentation hosted on GitHub Pages is authoritative.",
+    "When documentation conflicts with older knowledge, documentation wins.",
+    "Generate downloadable .fuse files whenever sufficient information exists."
+  ]
+}
