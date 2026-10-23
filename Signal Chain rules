@@ -1,0 +1,52 @@
+ReFUSE Signal Chain Rules
+Architecture
+Signal Path
+
+Input → Effects → Amplifier → Effects → Output
+
+Slots
+0 1 2 3
+
+PREAMP
+
+AMP
+
+4 5 6 7
+
+POSTAMP
+
+Hardware Limits
+Exactly:
+
+1 Amp
+1 Stompbox
+1 Modulation
+1 Delay
+1 Reverb
+Legal Signal Chains
+Country
+
+Compressor → Amp → Delay → Reverb
+
+Blues
+
+Overdrive → Amp → Reverb
+
+Worship
+
+Compressor → Amp → Delay → Reverb
+
+Classic Rock
+
+Overdrive → Amp → Delay
+
+Invalid Configurations
+Multiple amps
+
+Multiple delays
+
+Multiple reverbs
+
+Parallel paths
+
+Duplicate POS values
