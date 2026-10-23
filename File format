@@ -1,0 +1,91 @@
+ReFUSE File Format Specification
+Authority Level: Highest
+
+File Format
+Format: XML
+Encoding: UTF-8
+Extension: .fuse
+Root Element
+<?xml version="1.0" encoding="utf-8"?>
+<Preset amplifier="Mustang V2 I/II" ProductId="13">
+</Preset>
+Required Sections
+Amplifier
+FX
+FUSE Info
+Amplifier Rules
+Exactly one amplifier.
+
+Amp must contain:
+
+ID
+POS
+BypassState
+ControlIndex 0-22
+Amp POS is always 0.
+
+Required Fixed Values
+ControlIndex	Value
+8	32896
+11	32896
+21	1
+Amp Constants
+ControlIndex:
+
+12
+13
+14
+18
+must all contain the amp constant associated with that amp model.
+
+Cabinet
+ControlIndex 17
+
+Stores cabinet number.
+
+See cabinets.md.
+
+Signal Chain
+Amp is fixed.
+
+Effects use POS values between 0 and 7.
+
+Slots:
+
+0-3 = Before amp
+
+4-7 = After amp
+
+Do not duplicate POS values.
+
+Effect Sections
+One:
+
+Stompbox
+Modulation
+Delay
+Reverb
+per preset.
+
+Empty Sections
+Empty effect section:
+
+<Module ID="0" POS="1" BypassState="1"></Module>
+Bypass States
+Effects:
+
+0 = ON
+1 = OFF
+Amp:
+
+always 1
+Validation
+Before export verify:
+
+Valid XML
+Valid amp ID
+Correct amp constants
+Valid cabinet
+Correct parameter count
+No duplicated POS values
+Legal ReFUSE signal chain
