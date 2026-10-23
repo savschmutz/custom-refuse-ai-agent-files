@@ -1,0 +1,67 @@
+ReFUSE Effects
+Stompbox Effects
+Compressor
+ID: 7
+
+Parameters
+
+0 = Level 1 = Threshold 2 = Ratio 3 = Attack 4 = Release
+
+Overdrive
+ID: 60
+
+Parameters
+
+0 = Level 1 = Gain 2 = Low 3 = Mid 4 = High
+
+Fuzz
+ID: 26
+
+Parameters
+
+0 = Level 1 = Gain 2 = Octave 3 = Low 4 = High
+
+Delay Effects
+Mono Delay
+ID: 22
+
+Parameters
+
+0 = Level 1 = Time 2 = Feedback 3 = Bright 4 = Attenuation
+
+Tape Delay
+ID: 43
+
+Parameters
+
+0 = Level 1 = Time 2 = Feedback 3 = Flutter 4 = Bright 5 = Stereo
+
+Reverb Effects
+65 Spring
+ID: 11
+
+Parameters
+
+0 = Level 1 = Decay 2 = Dwell 3 = Diffusion 4 = Tone
+
+Small Hall
+ID: 36
+
+Large Hall
+ID: 58
+
+Arena
+ID: 77
+
+Modulation Effects
+Phaser
+ID: 79
+
+Vintage Tremolo
+ID: 64
+
+Sine Chorus
+ID: 18
+
+Sine Flanger
+ID: 24
