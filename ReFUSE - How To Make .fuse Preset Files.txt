@@ -1,0 +1,440 @@
+==============================================================================
+HOW TO MAKE .FUSE PRESET FILES (Fender Mustang I/II, V1)
+Written: 2026-10-22 (updated the same day for SS Rev6)
+==============================================================================
+
+What this covers, following "My Learning Wishlist.txt":
+  1. Preset file structure          5. Step-by-step: making a new preset
+  2. Available components           6. Checklist before using a file
+  3. Parameter definitions          7. Known unknowns
+  4. Signal chain rules             8. Sources
+
+HOW SURE IS EACH FACT?
+  [FILE]    Seen in six real FUSE preset files (listed below).
+  [AMP]     Seen on the user's own amp (Mustang I, V1, USB product 0x0004).
+  [CODE]    From ReFUSE's source code (refuse Rev6\src\lib; same in Rev5
+            except the cabinet names).
+  [PLUG]    From the open-source PLUG editor (github.com/offa/plug).
+  [GUESS]   Reasoned from the above but NOT confirmed. Treat with care.
+
+The six sample files: Fusion Lead, Liquid Solo, preset_Van Halen British
+80s, Super Flanger, Super-Live Album, Vee Eight (all made by FUSE for a
+"Mustang V2 I/II", and all import correctly on the user's V1 amp [AMP]).
+
+
+==============================================================================
+1. PRESET FILE STRUCTURE
+==============================================================================
+
+FILE FORMAT
+  - Plain XML text, UTF-8, extension .fuse. [FILE]
+  - FUSE writes it all on ONE line. Line breaks and indents are fine for
+    ReFUSE (it uses a normal XML reader) [CODE]; whether old FUSE accepts
+    them is unknown [GUESS: probably yes].
+  - Not JSON or YAML. There is no "name / amp / effects" JSON form.
+
+OVERALL LAYOUT (shown indented for reading)
+
+  <?xml version="1.0" encoding="utf-8"?>
+  <Preset amplifier="Mustang V2 I/II" ProductId="13">
+    <Amplifier>
+      <Module ID="94" POS="0" BypassState="1">
+        <Param ControlIndex="0">49010</Param>
+        ... ControlIndex 0 to 22 ...
+      </Module>
+    </Amplifier>
+    <FX>
+      <Stompbox ID="1">   <Module .../> </Stompbox>
+      <Modulation ID="2"> <Module .../> </Modulation>
+      <Delay ID="3">      <Module .../> </Delay>
+      <Reverb ID="4">     <Module .../> </Reverb>
+    </FX>
+    <Band Type="0" Repeat="0"> ... </Band>
+    <FUSE>
+      <Info name="Van Halen British 80's" author="..." rating="0"
+            genre1="-1" genre2="-1" genre3="-1" tags="" fenderid="0" />
+      <PedalColors> ... </PedalColors>
+    </FUSE>
+    <FirstExpressionPedal ... />
+    <UsbGain>0</UsbGain>
+  </Preset>
+
+REQUIRED PARTS (what ReFUSE actually reads [CODE])
+  <Amplifier><Module>   the amp: model ID + its 23 settings
+  <FX> sections         Stompbox, Modulation, Delay, Reverb - each holds
+                        one <Module> (an effect, or ID="0" for none)
+  <FUSE><Info name=...> the preset name
+
+OPTIONAL PARTS (kept by FUSE, ignored by ReFUSE [CODE])
+  <Preset amplifier=... ProductId=...>  which amp made the file. All six
+      samples say "Mustang V2 I/II" / 13, yet load fine on a V1 [FILE][AMP].
+      ReFUSE ignores both and writes these same values when exporting.
+  <Band>                 FUSE's backing-track settings. Copy as-is.
+  <PedalColors>          colours FUSE used to draw the pedals. Copy as-is.
+  <FirstExpressionPedal> expression pedal setup. Copy as-is.
+  <UsbGain>              USB recording level (0 in all samples).
+
+THE <Module> ELEMENT
+  ID="..."          Which model. A WHOLE NUMBER (decimal). See section 2.
+                    ID="0" means the section is empty (no effect).
+  POS="..."         Where it goes in the chain: slot 0 to 7. See section 4.
+                    The amp always has POS="0".
+  BypassState="..." For EFFECTS: 0 = ON, 1 = OFF (bypassed). [FILE][AMP]
+                    For the AMP it is always 1 and means nothing. [FILE]
+  <Param ControlIndex="n">value</Param>  one setting. See section 3.
+
+METADATA
+  - Name: <Info name="...">. ReFUSE shows it and suggests it as the export
+    file name. Use &apos; for an apostrophe and &amp; for "&" (FUSE writes a
+    plain ' inside the double quotes, which is also legal XML). [FILE]
+  - author, rating, genre1-3, tags, fenderid: FUSE library fields. In the
+    samples: author "" or a name, rating 0, genres -1, tags "", fenderid 0.
+
+VERSIONING
+  - The file has NO format version number. [FILE]
+  - The only "version" hint is amplifier="Mustang V2 I/II" ProductId="13".
+  - Track your own versions in the file name, e.g. "Lead Tone v2.fuse", or
+    in the Info name.
+
+
+==============================================================================
+2. AVAILABLE COMPONENTS
+==============================================================================
+
+HOW MODEL IDs WORK
+  The amp itself uses a 4-digit hex code per model (e.g. 0x5E00). In a .fuse
+  file the ID is the FIRST TWO hex digits written as a decimal number:
+  0x5E00 -> 0x5E -> 94. [FILE: 12 models confirmed this way]
+  Models whose code does not end in 00 (the V2-only pedals) have no
+  confirmed .fuse ID - see section 7.
+
+  "*" = ID confirmed in a real FUSE file.
+  "V2" = added with the V2 amps; may not work on the user's V1 amp [PLUG].
+
+AMP MODELS (section <Amplifier>)
+  File ID  Model              Based on (per ReFUSE's notes)
+  -------  -----------------  ------------------------------------
+    103    '57 Deluxe         1957 Fender Deluxe
+    100    '59 Bassman        1959 Fender Bassman
+    124    '57 Champ          1957 Fender Champ
+     83    '65 Deluxe Reverb  1965 Fender Deluxe Reverb
+    106    '65 Princeton      1965 Fender Princeton Reverb
+    117    '65 Twin Reverb    1965 Fender Twin Reverb
+    114 *  Super-Sonic        Fender Super-Sonic 22
+     97    British '60s       VOX AC30
+    121    British '70s       Marshall 1959SLP
+     94 *  British '80s       Marshall JCM 800
+     93 *  American '90s      Mesa/Boogie Dual Rectifier
+    109 *  Metal 2000         Peavey 5150
+    241    Studio Preamp  V2  No amp modelling
+    246    '57 Twin       V2  1957 Fender Twin
+    249    '60s Thrift    V2  Sears 1964 Silvertone
+    255    British Watts  V2  HiWatt 100 DR103
+    252    British Colour V2  Orange
+
+CABINETS (amp setting ControlIndex 17; the value is the number below)
+  The order below is from PLUG [PLUG] and matches the default cabinet each
+  amp gets in ReFUSE's own defaults table [CODE] and the sample files.
+  !! ReFUSE Rev1 to Rev5 show WRONG NAMES for some of these (3, 4, 5, 6,
+  !! 10) in the cabinet drop-down; Rev6 shows the names below. The number in
+  !! the file is what counts.
+  Value  PLUG name  Meaning [GUESS for the 4x12 ones]
+  -----  ---------  -------------------------------------------
+    0    Off        no cabinet simulation
+    1    57DLX      1x12 '57 Deluxe
+    2    BSSMN      4x10 '59 Bassman
+    3    65DLX      1x12 '65 Deluxe Reverb
+    4    65PRN      1x10 '65 Princeton
+    5    CHAMP      1x8 '57 Champ
+    6    4x12M      4x12 - default for British '80s
+    7    2x12C      2x12 - default for British '60s
+    8    4x12G      4x12 - default for British '70s and Metal 2000
+    9    65TWN      2x12 '65 Twin Reverb
+   10    4x12V      4x12 - default for American '90s
+   11    SS212      2x12 Super-Sonic
+   12    SS112      1x12 Super-Sonic
+  13-16  (V2 only)  ReFUSE lists '57 Twin, '60s Thrift, British Watts and
+                    British Colour cabinets; PLUG's list stops at 12, so
+                    these probably do not exist on a V1 amp [GUESS].
+
+MICROPHONES   None. The Mustang I/II has no microphone choice.
+RACK EFFECTS  None. Only the four sections below exist.
+COMPRESSORS   Two, in the Stompbox section: Compressor and Simple Comp.
+EQ TYPES      None as effects. EQ = the amp's Treble, Mid, Bass and Presence.
+
+STOMPBOX EFFECTS (section <Stompbox>)
+  File ID  Model            Settings (ControlIndex 0, 1, 2, ...)
+  -------  ---------------  ------------------------------------------
+     60    Overdrive        Level, Gain, Low, Mid, High
+     73    Fixed Wah        Level, Freq, Min, Max, Q
+     74    Touch Wah        Level, Sens, Min, Max, Q
+     26    Fuzz             Level, Gain, Octave, Low, High
+     28    Fuzz Touch Wah   Level, Gain, Sens, Octave, Peak
+      7    Compressor       Level, Thresh, Ratio, Attack, Release
+    136    Simple Comp      Type
+    186    Green Box    V2  Level, Gain, Tone, Blend
+     ?     Ranger Boost V2  Level, Gain, Tone        (ID unknown, see 7)
+     ?     Orange Box   V2  Level, Gain, Tone        (ID unknown, see 7)
+     ?     Black Box    V2  Level, Gain, Tone        (ID unknown, see 7)
+     ?     Big Fuzz     V2  Level, Tone, Sustain     (ID unknown, see 7)
+
+MODULATION EFFECTS (section <Modulation>)
+     18    Sine Chorus       Level, Rate, Depth, Avg Dly, LR Phase
+     19    Triangle Chorus   Level, Rate, Depth, Avg Dly, LR Phase
+     24 *  Sine Flanger      Level, Rate, Depth, Fdbk, LR Phase
+     25    Triangle Flanger  Level, Rate, Depth, Fdbk, LR Phase
+     45    Vibratone         Level, Rotor, Depth, Fdbk, LR Phase
+     64    Vintage Tremolo   Level, Rate, Duty, Attack, Release
+     65    Sine Tremolo      Level, Rate, Duty, LFO Clip, Tri Shape
+     34    Ring Modulator    Level, Freq, Depth, Shape, Phase
+     41    Step Filter       Level, Rate, Res, Min Freq, Max Freq
+     79    Phaser            Level, Rate, Depth, Fdbk, Shape
+     31    Pitch Shifter     Level, Pitch, Detune, Fdbk, PreDly
+
+DELAY EFFECTS (section <Delay>)
+     22 *  Mono Delay          Level, Time, Fdbk, Bright, Atten
+     67    Mono Echo Filter    Level, Time, Fdbk, Freq, Res, Input
+     72    Stereo Echo Filter  Level, Time, Fdbk, Freq, Res, Input
+     43 *  Tape Delay          Level, Time, Fdbk, Flutter, Bright, Stereo
+     42    Stereo Tape Delay   Level, Time, Fdbk, Flutter, Sep, Bright
+     21    Ducking Delay       Level, Time, Fdbk, Release, Thresh
+     70    Reverse Delay       Level, Time, Fdbk, Bright, Atten
+     68    Multitap Delay      Level, Time, Fdbk, Bright, Atten
+     69    Ping Pong Delay     Level, Time, Fdbk, Bright, Atten
+
+REVERB EFFECTS (section <Reverb>)
+  All reverbs: Level, Decay, Dwell, Diff, Tone
+     36 *  Small Hall          59 *  Large Room        76    Ambient
+     58 *  Large Hall          78    Small Plate       77 *  Arena
+     38    Small Room          75 *  Large Plate       33    '63 Spring
+                                                       11    '65 Spring
+
+  Setting names are ReFUSE's short labels [CODE]. The sample files always
+  hold exactly that many Params (5 for most, 6 for Tape Delay). [FILE]
+
+
+==============================================================================
+3. PARAMETER DEFINITIONS
+==============================================================================
+
+VALUES AND UNITS
+  - Knob settings are stored 0 to 65535. [FILE]
+  - The amp itself only uses 0 to 255; file value = amp value x 257, so
+    0 -> 0, 128 -> 32896 (the "middle"), 255 -> 65535. [FILE][CODE]
+  - ReFUSE shows them as 0-100 %. Percent -> file value:
+        amp value  = round(percent x 2.55)
+        file value = amp value x 257
+    e.g. 50 % -> 128 -> 32896;  75 % -> 191 -> 49087;  100 % -> 65535.
+  - UNITS: none are known. There are no milliseconds, dB or Hz in the file;
+    every knob is just a position from minimum to maximum. [FILE]
+  - A few samples use values that are not exact multiples of 257 (e.g.
+    49010); the amp simply uses the top two hex digits (49010 -> 191).
+
+AMP SETTINGS (<Amplifier><Module>, ControlIndex 0 to 22)
+  Index  Setting       Stored as         Range / notes
+  -----  ------------  ----------------  ----------------------------------
+    0    Volume        knob 0-65535
+    1    Gain          knob 0-65535
+    2    Gain 2        knob 0-65535      only used by Super-Sonic [CODE]
+    3    Master        knob 0-65535
+    4    Treble        knob 0-65535
+    5    Middle        knob 0-65535
+    6    Bass          knob 0-65535
+    7    Presence      knob 0-65535
+    8    (fixed)       always 32896      [FILE: all six] [PLUG]
+    9    Depth         knob 0-65535      only used when Noise Gate = 5
+                                         (Custom) [PLUG]
+   10    Bias          knob 0-65535
+   11    (fixed)       always 32896      [FILE: all six] [PLUG]
+   12    amp constant  small number      MUST match the amp model - see
+   13    amp constant  small number      the table below. Same number in
+   14    amp constant  small number      12, 13, 14 and 18. [FILE][PLUG]
+   15    Noise Gate    0-5               0 Off, 1 Low, 2 Mid, 3 High,
+                                         4 Super, 5 Custom [PLUG]
+   16    Gate Thresh   0-9               used with Noise Gate 5 [PLUG]
+   17    Cabinet       0-12              see Cabinets in section 2
+   18    amp constant  small number      same as 12-14
+   19    Sag           0-2               1 in all samples [FILE][PLUG]
+   20    Brightness    0 or 1            off / on [PLUG]
+   21    (fixed)       always 1          [FILE: all six] [PLUG]
+   22    (amp value)   0-65535           0 in five samples, 23901 in one;
+                                         meaning unknown - copy it or use 0
+
+  Indexes 12-21 are stored as SMALL numbers (not x 257). [FILE]
+
+AMP CONSTANT (indexes 12, 13, 14, 18) - one number per amp model [PLUG]
+  '57 Deluxe 1    '65 Princeton 4   British '60s 7    American '90s 10
+  '59 Bassman 2   '65 Twin 5        Metal 2000 8      British '70s 11
+  '65 Deluxe 3    Super-Sonic 6     British '80s 9    '57 Champ 12
+  V2: Studio Preamp 13, '57 Twin 14, '60s Thrift 15, British Colour 16,
+      British Watts 17
+  Matches all six samples (British '80s 9, American '90s 10, Super-Sonic 6,
+  Metal 2000 8). [FILE]
+
+EFFECT SETTINGS
+  - Every effect setting is a knob 0-65535, in the order listed in
+    section 2. [FILE][CODE]
+  - Simple Comp "Type" is also stored as a knob; which positions select
+    which type is unknown.
+
+DEFAULTS (what ReFUSE loads when you pick a model) [CODE: defaults.ts]
+  Amp            Vol Gain Mstr Treb Mid Bass Pres  Gate Cab Sag
+  -------------  --- ---- ---- ---- --- ---- ----  ---- --- ---
+  '57 Deluxe      67   60   50   75  50   50   50    0    1   1
+  '59 Bassman     67   64   50   50  48   64   57    0    2   1
+  '57 Champ       67   70  100   50  50   50   50    0    5   1
+  '65 Deluxe      67   44  100   57  81   22    0    0    3   1
+  '65 Princeton   67   33  100   60  80   30   50    0    4   1
+  '65 Twin        67   33   39   70  73   67   50    0    9   1
+  Super-Sonic     67   73   33   60  64   60   50    2   12   1
+                  (Gain 2 = 51)
+  British '60s    67   64   39   60  50   69    0    0    7   1
+  British '70s    67  100   49   67  36   77   50    1    8   1
+  British '80s    67  100   49   67  36   77   50    1    6   1
+  American '90s   67   56   40   64  10   78   44    3   10   1
+  Metal 2000      67   64   33   60  30   57   56    2    8   1
+  (knobs in %, Depth and Bias 50 %, Brightness off, for all of these)
+
+  Effect defaults known to ReFUSE (in %, in setting order):
+    Overdrive 50 50 50 50 50          Sine Chorus 100 5 10 10 50
+    Fixed Wah 100 50 0 100 0          Sine Flanger 100 5 50 50 50
+    Fuzz 50 50 50 50 50               Vintage Tremolo 86 68 39 96 95
+    Compressor 55 6 31 50 50          Phaser 99 0 99 72 0
+    Simple Comp 0                     Mono Delay 100 50 50 50 50
+    Small Hall 43 36 43 50 57         Tape Delay 49 11 0 39 50 0
+    Large Hall 31 24 50 2 69          Stereo Tape Delay 49 53 11 39 100 50
+    Small Room 50 50 50 50 50         '65 Spring 50 55 29 100 50
+    Large Plate 22 50 57 50 71
+  ReFUSE has no defaults for the other effects (it then starts them at 0).
+
+
+==============================================================================
+4. SIGNAL CHAIN RULES (what is legal)
+==============================================================================
+
+  Chain:   [slot 0][1][2][3] -> AMP -> [slot 4][5][6][7]
+  - 8 effect slots. Slots 0-3 are BEFORE the amp, 4-7 AFTER it. [CODE]
+  - POS in the file is the slot number. The samples put delays and
+    reverbs after the amp (POS 6 and 7) and the flanger at POS 5. [FILE]
+
+  Reorder effects?      YES - any effect can go in any slot 0-7, before or
+                        after the amp. [CODE]
+  Multiple delays?      NO - only ONE effect of each kind (one stompbox,
+                        one modulation, one delay, one reverb), so at most
+                        4 effects in 8 slots. [CODE: "hardware limit" rule;
+                        the file has one section per kind]
+  Multiple amps?        NO - exactly one amp. [FILE]
+  Parallel paths?       NO - the chain is one straight line. [FILE][CODE]
+  Stereo effects?       Some models are stereo by name (Stereo Echo
+                        Filter, Stereo Tape Delay, Ping Pong Delay, and the
+                        LR Phase / Stereo / Sep settings). Whether a
+                        Mustang I actually outputs stereo (e.g. on the
+                        headphone or USB output) is unknown [GUESS].
+
+  EMPTY SECTIONS
+  - A kind with no effect still needs its section, with
+    <Module ID="0" POS="n" BypassState="1"></Module>. [FILE]
+  - FUSE fills POS of empty sections with a spare slot number (0, 1, 2).
+  - !! When ReFUSE imports an empty section it CLEARS that slot. So the POS
+    of an empty section must NOT be a slot another effect uses - unless that
+    effect's section comes later in the file (order: Stompbox, Modulation,
+    Delay, Reverb). Safest: give empty sections slot numbers no effect uses.
+    (ReFUSE's own Export already does this.) [CODE]
+
+
+==============================================================================
+5. STEP BY STEP: MAKING A NEW PRESET FILE
+==============================================================================
+
+  EASIEST: use ReFUSE (SS Rev6, or SS Rev5) - "Work offline" (it starts
+  with an empty list), then "New preset" or import a similar preset, set
+  everything on screen, then "Export preset". ReFUSE
+  writes a correct file for you.
+
+  BY HAND (in a text editor):
+  1. COPY a real file (e.g. "Liquid Solo.fuse") and rename the copy. Never
+     edit the only copy of a preset.
+  2. AMP: set <Amplifier><Module ID> to the amp's File ID (section 2).
+  3. AMP CONSTANT: set ControlIndex 12, 13, 14 and 18 to that amp's number
+     (section 3). Leave 8 and 11 at 32896 and 21 at 1.
+  4. AMP KNOBS: set ControlIndex 0-7, 9, 10 using percent -> file value.
+  5. CABINET, GATE, SAG, BRIGHTNESS: ControlIndex 17, 15 (+16), 19, 20 as
+     small numbers.
+  6. EFFECTS: in each FX section put ONE <Module>:
+       ID = effect File ID (must belong to THAT section), POS = slot 0-7,
+       BypassState = 0 (on) or 1 (off), one <Param> per setting.
+     For no effect: ID="0", BypassState="1", a spare POS, no Params.
+  7. Use each slot number only once across all four sections.
+  8. NAME: change <Info name="...">.
+  9. Keep <Band>, <PedalColors>, <FirstExpressionPedal>, <UsbGain> as they
+     were in the copied file.
+ 10. TEST: ReFUSE -> Work offline -> Import preset. Check the amp, cabinet,
+     each effect and the name, then try it on the amp.
+
+  WORKED EXAMPLE - Overdrive before the amp, Mono Delay after it, both on:
+    <Stompbox ID="1"><Module ID="60" POS="0" BypassState="0">
+      <Param ControlIndex="0">32896</Param>   Level 50 %
+      <Param ControlIndex="1">49087</Param>   Gain 75 %
+      <Param ControlIndex="2">32896</Param>   Low 50 %
+      <Param ControlIndex="3">32896</Param>   Mid 50 %
+      <Param ControlIndex="4">32896</Param>   High 50 %
+    </Module></Stompbox>
+    <Modulation ID="2"><Module ID="0" POS="1" BypassState="1"></Module></Modulation>
+    <Delay ID="3"><Module ID="22" POS="6" BypassState="0">
+      <Param ControlIndex="0">25443</Param>   Level 39 %
+      <Param ControlIndex="1">32896</Param>   Time 50 %
+      <Param ControlIndex="2">16448</Param>   Fdbk 25 %
+      <Param ControlIndex="3">32896</Param>   Bright 50 %
+      <Param ControlIndex="4">32896</Param>   Atten 50 %
+    </Module></Delay>
+    <Reverb ID="4"><Module ID="0" POS="2" BypassState="1"></Module></Reverb>
+  (The "Level 50 %" notes are for reading here only - do not put them in the
+  file.)
+
+
+==============================================================================
+6. CHECKLIST BEFORE USING A FILE
+==============================================================================
+
+  [ ] Opens in a browser or XML viewer without errors (well-formed XML)
+  [ ] Amp ID is in the amp list; effect IDs are in the RIGHT section
+  [ ] Amp constant (12, 13, 14, 18) matches the amp model
+  [ ] 8 and 11 = 32896, 21 = 1
+  [ ] Cabinet 0-12, Noise Gate 0-5, Threshold 0-9, Sag 0-2, Brightness 0-1
+  [ ] Knob values 0-65535
+  [ ] BypassState 0 for effects you want ON
+  [ ] No slot number (POS) used twice
+  [ ] No V2-only amps or pedals if it is for the Mustang I (V1)
+  [ ] Imports correctly in ReFUSE offline before trying it on the amp
+
+
+==============================================================================
+7. KNOWN UNKNOWNS
+==============================================================================
+
+  - File IDs of the V2 pedals Ranger Boost, Orange Box, Black Box and Big
+    Fuzz (their amp codes end in 01). ReFUSE writes and reads them as the
+    two hex byte pairs swapped (e.g. 0x0301 -> 0x0103 = 259); not checked
+    against a real FUSE file.
+  - Whether V2-only amps, pedals and cabinets 13-16 work on a V1 amp.
+  - Meaning of amp ControlIndex 22, and the "(fixed)" values 8, 11, 21.
+  - How Simple Comp's "Type" positions map to its types.
+  - Exact names of cabinets 6, 7, 8, 10 (PLUG only gives short codes).
+  - Whether old FUSE accepts files with line breaks, or with a different
+    amplifier= / ProductId= header.
+  - Real-world units (ms, dB, Hz) of any knob.
+
+
+==============================================================================
+8. SOURCES
+==============================================================================
+
+  - The six sample .fuse files (listed at the top)
+  - ReFUSE source: refuse Rev6\src\lib (models.ts, defaults.ts,
+    preset_importer.ts, preset_exporter.ts, controllers\effect_controller.ts)
+  - ReFUSE protocol notes: refuse Rev6\PROTOCOL.md
+  - PLUG source, github.com/offa/plug: include\effects_enum.h (cabinet and
+    amp lists), src\ui\amp_advanced.ui (gate, threshold, sag, brightness
+    ranges), src\com\PacketSerializer.cpp (amp constants, fixed values)
+  - Fan wiki: fender-mustang-amps-and-fuse.fandom.com,
+    "Tips and Tricks: Firmware"
